@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Al día</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Al día">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#E7EBE6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0B110F" media="(prefers-color-scheme: dark)">
+<style>
+/* Al día: una barra arriba para cambiar de sección y debajo cada app a pantalla completa */
+:root{
+  --bg:#E7EBE6; --ink:#15201B; --mu:#5C6B63; --line:#CDD5CE; --on:#15201B; --on-ink:#F4F6F2;
+  --font:"Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark){:root{--bg:#0B110F;--ink:#E6ECE7;--mu:#93A39A;--line:#26312C;--on:#E6ECE7;--on-ink:#0B110F;color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);display:flex;flex-direction:column;overflow:hidden;-webkit-tap-highlight-color:transparent}
+.bar{flex:none;padding:calc(8px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 8px max(12px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--line)}
+.sw{display:flex;gap:4px;background:var(--line);border-radius:999px;padding:3px;max-width:460px;margin:0 auto}
+.sw button{flex:1;border:0;background:none;border-radius:999px;padding:8px 6px;font:600 .9rem/1.2 var(--font);color:var(--mu);cursor:pointer;white-space:nowrap}
+.sw button[aria-selected="true"]{background:var(--on);color:var(--on-ink)}
+.sw button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.stage{flex:1;position:relative;min-height:0;padding-bottom:env(safe-area-inset-bottom,0px)}
+.stage iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:var(--bg)}
+.stage iframe[hidden]{display:none}
+.off{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;color:var(--mu)}
+</style>
+</head>
+<body>
+<div class="bar">
+  <div class="sw" role="tablist" aria-label="Secciones">
+    <button type="button" role="tab" data-s="nutri" aria-selected="true">Nutrición</button>
+    <button type="button" role="tab" data-s="fin" aria-selected="false">Finanzas</button>
+    <button type="button" role="tab" data-s="ven" aria-selected="false">Vencimientos</button>
+  </div>
+</div>
+<div class="stage" id="stage">
+  <iframe id="f-nutri" title="Nutrición"></iframe>
+  <iframe id="f-fin" title="Finanzas" hidden></iframe>
+  <iframe id="f-ven" title="Vencimientos" hidden></iframe>
+</div>
+<script>
+// Cada sección es la app de siempre: Synergética y Perrimón se cargan tal cual están publicadas,
+// así que cualquier mejora que hagas en ellas aparece aquí sola.
+const SRC = { nutri: '/Synerg-tica/', fin: '/Perrimon/', ven: 'vencimientos.html' };
+const sw = document.querySelector('.sw');
+const frame = k => document.getElementById('f-' + k);
+
+function load(k, hash){
+  const f = frame(k);
+  if (!f.getAttribute('src')) f.src = SRC[k] + (hash || '');
+}
+function show(k, hash){
+  if (!SRC[k]) k = 'nutri';
+  load(k, hash);
+  Object.keys(SRC).forEach(x => frame(x).hidden = x !== k);
+  sw.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', b.dataset.s === k));
+  try { localStorage.setItem('aldia_seccion', k) } catch (e) {}
+  try { const w = frame(k).contentWindow; if (w && w.aldiaShown) w.aldiaShown() } catch (e) {}
+}
+sw.addEventListener('click', e => { const b = e.target.closest('button'); if (b) show(b.dataset.s) });
+
+// Nutrición se carga siempre: guarda la sesión de tu cuenta, que también usa Vencimientos.
+load('nutri');
+const h = location.hash;
+let last = null; try { last = localStorage.getItem('aldia_seccion') } catch (e) {}
+if (h === '#gasto') show('fin', '#apuntar');
+else if (h === '#vencimientos') show('ven');
+else show(last || 'nutri');
+
+if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+</script>
+</body>
+</html>

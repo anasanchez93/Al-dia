@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vencimientos · Al día</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one narrow phone-first column; summary strip, category filter, then a dated list of cards that open into a guide */
+:root{
+  --bg:#EEF1EC; --surface:#FAFBF8; --ink:#14231f; --muted:#5b6b66; --line:#d8e1de;
+  --pine:#1F5C48; --pine-soft:#e2ede9; --sun:#e8a33a;
+  --bad:#b4372b; --bad-soft:#f8e4e1; --warn:#9a6300; --warn-soft:#fbefd6; --ok:#2b6e4f; --ok-soft:#e0f0e7;
+  --display:"Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body:"Instrument Sans", "Helvetica Neue", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1715; --surface:#17221f; --ink:#e7efec; --muted:#9aaba5; --line:#2a3834;
+  --pine:#7cc4ae; --pine-soft:#1d3029; --sun:#f0b65a;
+  --bad:#f08a7e; --bad-soft:#3a1e1b; --warn:#f0c068; --warn-soft:#352a14; --ok:#7fcfa2; --ok-soft:#18301f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1715; --surface:#17221f; --ink:#e7efec; --muted:#9aaba5; --line:#2a3834;
+  --pine:#7cc4ae; --pine-soft:#1d3029; --sun:#f0b65a;
+  --bad:#f08a7e; --bad-soft:#3a1e1b; --warn:#f0c068; --warn-soft:#352a14; --ok:#7fcfa2; --ok-soft:#18301f; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+.copia{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+label.btn{display:inline-block;cursor:pointer}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+.wrap{max-width:560px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:18px}
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+h1{font-family:var(--display);font-weight:800;font-size:2.1rem;line-height:1;margin:0;letter-spacing:-.02em}
+h1 span{color:var(--sun)}
+.tag{color:var(--muted);font-size:.9rem;margin:4px 0 0}
+button{font:inherit;cursor:pointer}
+.btn{border:0;border-radius:999px;padding:10px 16px;font-weight:600;background:var(--pine);color:var(--bg);white-space:nowrap}
+.btn.ghost{background:transparent;color:var(--pine);border:1.5px solid var(--line)}
+.btn.danger{background:var(--bad);color:var(--bg)}
+.btn:disabled{opacity:.5;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--sun);outline-offset:2px}
+
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sum{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column}
+.sum b{font-family:var(--display);font-size:1.6rem;line-height:1.1;font-variant-numeric:tabular-nums}
+.sum small{color:var(--muted);font-size:.78rem;letter-spacing:.02em}
+.sum.bad b{color:var(--bad)} .sum.warn b{color:var(--warn)} .sum.ok b{color:var(--ok)}
+
+.filters{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.chip{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:.88rem;white-space:nowrap}
+.chip[aria-pressed="true"]{background:var(--pine);color:var(--bg);border-color:var(--pine)}
+
+.banner{background:var(--pine-soft);border-radius:12px;padding:10px 14px;font-size:.88rem;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.banner button{background:none;border:0;color:var(--pine);font-weight:600;padding:4px 0;text-decoration:underline}
+.banner.warn{background:var(--warn-soft)}
+
+.list{display:flex;flex-direction:column;gap:8px;list-style:none;margin:0;padding:0}
+.item{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.row{display:grid;grid-template-columns:64px 1fr;gap:12px;align-items:center;width:100%;text-align:left;background:none;border:0;color:inherit;padding:12px 14px}
+.days{display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:10px;height:56px;font-variant-numeric:tabular-nums;text-align:center}
+.days b{font-family:var(--display);font-size:1.35rem;line-height:1}
+.days small{font-size:.66rem;letter-spacing:.04em;text-transform:uppercase;line-height:1.2}
+.s-bad .days{background:var(--bad-soft);color:var(--bad)}
+.s-warn .days{background:var(--warn-soft);color:var(--warn)}
+.s-ok .days{background:var(--ok-soft);color:var(--ok)}
+.meta{min-width:0}
+.meta strong{display:block;font-weight:600;overflow-wrap:anywhere}
+.meta span{color:var(--muted);font-size:.84rem}
+.ex{font-size:.68rem;color:var(--sun);font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-left:6px}
+.detail{border-top:1px solid var(--line);padding:12px 14px 14px;display:flex;flex-direction:column;gap:10px}
+.detail h3{margin:0;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.detail p{margin:0;max-width:62ch}
+.note{background:var(--bg);border-radius:8px;padding:8px 10px;font-size:.9rem;overflow-wrap:anywhere;white-space:pre-wrap}
+.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+.empty{text-align:center;color:var(--muted);padding:28px 10px;background:var(--surface);border:1px dashed var(--line);border-radius:14px}
+
+form.sheet{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px}
+form.sheet h2{font-family:var(--display);margin:0;font-size:1.3rem}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:.82rem;font-weight:600;color:var(--muted)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 10px;width:100%;min-width:0}
+textarea{min-height:60px;resize:vertical}
+.hint{font-size:.82rem;color:var(--muted);margin:0}
+.err{color:var(--bad);font-size:.85rem;margin:0}
+
+footer{color:var(--muted);font-size:.8rem;display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:14px}
+@media (max-width:380px){.two{grid-template-columns:1fr}.row{grid-template-columns:56px 1fr}}
+@media (prefers-reduced-motion:no-preference){.item{transition:border-color .15s}.item:hover{border-color:var(--pine)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Vencimientos<span>.</span></h1>
+      <p class="tag">Documentos, seguros, coche, casa y suscripciones: todo lo que caduca, en un solo sitio.</p>
+    </div>
+    <button class="btn" id="addBtn" type="button">+ Añadir</button>
+  </header>
+
+  <form class="sheet" id="form" hidden novalidate>
+    <h2 id="formTitle">Nuevo vencimiento</h2>
+    <div class="field">
+      <label for="f-type">¿Qué es?</label>
+      <select id="f-type"></select>
+      <p class="hint" id="f-typehint"></p>
+    </div>
+    <div class="field">
+      <label for="f-quien">¿De quién es?</label>
+      <select id="f-quien"><option value="Ana">Ana</option><option value="Elena">Elena</option><option value="Las dos">Las dos</option></select>
+    </div>
+    <div class="field">
+      <label for="f-name">Nombre</label>
+      <input id="f-name" type="text" placeholder="Ej.: DNI">
+    </div>
+    <div class="two">
+      <div class="field">
+        <label for="f-date">Fecha de caducidad o renovación</label>
+        <input id="f-date" type="date">
+      </div>
+      <div class="field">
+        <label for="f-remind">Marcar como «pronto»</label>
+        <select id="f-remind">
+          <option value="7">1 semana antes</option>
+          <option value="14">2 semanas antes</option>
+          <option value="30">1 mes antes</option>
+          <option value="60">2 meses antes</option>
+          <option value="90">3 meses antes</option>
+          <option value="180">6 meses antes</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label for="f-note">Nota (opcional)</label>
+      <textarea id="f-note" placeholder="Nº de póliza, compañía, precio, dónde está el papel…"></textarea>
+    </div>
+    <p class="err" id="f-err" hidden></p>
+    <div class="actions">
+      <button class="btn" type="submit" id="saveBtn">Guardar</button>
+      <button class="btn ghost" type="button" id="cancelBtn">Cancelar</button>
+    </div>
+  </form>
+
+  <section class="summary" aria-label="Resumen">
+    <div class="sum bad"><b id="nBad">0</b><small>Caducado</small></div>
+    <div class="sum warn"><b id="nWarn">0</b><small>Pronto</small></div>
+    <div class="sum ok"><b id="nOk">0</b><small>En orden</small></div>
+  </section>
+
+  <div class="banner warn" id="localBanner" hidden>
+    <span></span>
+  </div>
+  <div class="banner" id="exBanner" hidden>
+    <span>Los marcados como «Ejemplo» son de muestra.</span>
+    <button type="button" id="clearEx">Quitar los ejemplos</button>
+  </div>
+
+  <nav class="filters" id="filters" aria-label="Categorías"></nav>
+
+  <ul class="list" id="list"><li class="empty">Cargando tus vencimientos…</li></ul>
+
+  <section class="copia" aria-label="Copia de seguridad">
+    <button class="btn ghost" type="button" id="exportBtn">Descargar copia</button>
+    <label class="btn ghost" for="importFile">Importar copia</label>
+    <input type="file" id="importFile" accept="application/json,.json" hidden>
+    <p class="hint" id="importMsg" hidden></p>
+  </section>
+
+  <footer>
+    <span>Con tu cuenta de Synergética, tus vencimientos se guardan en la nube y solo los ves tú.</span>
+    <span>Las guías son orientativas y las normas cambian. Compruébalo en la fuente oficial (DGT, Policía Nacional, Seguridad Social, tu ayuntamiento o tu aseguradora).</span>
+  </footer>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const addBtn=$("addBtn"), form=$("form"), formTitle=$("formTitle"), saveBtn=$("saveBtn"), cancelBtn=$("cancelBtn"), nBad=$("nBad"), nWarn=$("nWarn"), nOk=$("nOk"), localBanner=$("localBanner"), exBanner=$("exBanner"), clearEx=$("clearEx"), filters=$("filters"), list=$("list"), exportBtn=$("exportBtn"), importFile=$("importFile"), importMsg=$("importMsg");
+
+const CATS = {doc:"Documentos", coche:"Coche", casa:"Casa", seguros:"Seguros y salud", subs:"Suscripciones", garantias:"Garantías", otros:"Otros"};
+const TYPES = {
+  dni:{name:"DNI",cat:"doc",remind:90,guide:"Pide cita previa en citapreviadnie.es. Se puede renovar desde unos meses antes de que caduque. Lleva el DNI actual, una foto reciente y paga la tasa en la oficina."},
+  pasaporte:{name:"Pasaporte",cat:"doc",remind:180,guide:"Cita previa en citapreviadnie.es, la misma web que el DNI. Muchos países exigen que le queden al menos 6 meses de validez al entrar, así que renuévalo antes de reservar viajes."},
+  carnet:{name:"Carnet de conducir",cat:"doc",remind:90,guide:"Lo más cómodo es ir a un centro de reconocimiento de conductores: hacen el examen médico y tramitan la renovación con la DGT en el momento. Llévate el DNI."},
+  tse:{name:"Tarjeta sanitaria europea",cat:"doc",remind:30,guide:"Se pide gratis en la sede electrónica de la Seguridad Social y llega por correo. Pídela con tiempo si vas a viajar por Europa."},
+  itv:{name:"ITV",cat:"coche",remind:30,guide:"Pide cita en una estación de ITV y lleva la ficha técnica y el seguro en vigor. Un turismo nuevo pasa la primera ITV a los 4 años, luego cada 2 años y, a partir de los 10, cada año."},
+  seguroCoche:{name:"Seguro del coche o la moto",cat:"coche",remind:45,guide:"Se renueva solo. Si quieres cambiar de compañía, tienes que avisar por escrito al menos un mes antes de la fecha de renovación. Compara precios unas semanas antes."},
+  ivtm:{name:"Impuesto de circulación",cat:"coche",remind:21,guide:"Lo cobra el ayuntamiento donde está domiciliado el coche y cada uno fija su periodo de pago. Domiciliarlo evita recargos por olvido."},
+  revision:{name:"Revisión del coche",cat:"coche",remind:30,guide:"Sigue el plan de mantenimiento del fabricante (por kilómetros o por tiempo, lo que llegue antes). Hacer las revisiones a tiempo es necesario para conservar la garantía."},
+  ibi:{name:"IBI",cat:"casa",remind:21,guide:"Lo cobra el ayuntamiento o el organismo de recaudación de la diputación. Algunos ayuntamientos bonifican el recibo si lo domicilias."},
+  seguroHogar:{name:"Seguro de hogar",cat:"casa",remind:45,guide:"Revisa que el capital de continente y contenido sigue siendo correcto. Para cambiar de compañía, avisa por escrito al menos un mes antes de la renovación."},
+  contrato:{name:"Contrato o tarifa (luz, gas, internet)",cat:"casa",remind:30,guide:"Las ofertas de entrada suelen subir al terminar la promoción o la permanencia. Apunta cuándo acaba para comparar antes."},
+  seguroSalud:{name:"Seguro de salud",cat:"seguros",remind:45,guide:"La prima suele subir cada año. Lee la carta de renovación y compara antes de que se renueve. Para darlo de baja, avisa por escrito al menos un mes antes."},
+  seguroVida:{name:"Seguro de vida o decesos",cat:"seguros",remind:45,guide:"Comprueba los beneficiarios y el capital. Si está ligado a la hipoteca, revisa si estás obligada a mantenerlo con el banco."},
+  subs:{name:"Suscripción",cat:"subs",remind:7,guide:"Muchas se renuevan solas y suben de precio al acabar la prueba. Cancela antes de la fecha si no la usas."},
+  dominio:{name:"Dominio o web",cat:"subs",remind:30,guide:"Si caduca el dominio, la web y el correo asociado dejan de funcionar y otra persona podría registrarlo. Activa la renovación automática o renueva con tiempo."},
+  garantia:{name:"Garantía de un producto",cat:"garantias",remind:30,guide:"En España los productos nuevos comprados desde 2022 tienen 3 años de garantía legal. Guarda el ticket o la factura y reclama antes de que acabe."},
+  otro:{name:"Otro",cat:"otros",remind:30,guide:""}
+};
+
+const DAY = 86400000;
+const today = () => { const d = new Date(); d.setHours(0,0,0,0); return d; };
+const parse = s => { const [y,m,d] = String(s).split("-").map(Number); return new Date(y, m-1, d); };
+const daysLeft = s => Math.round((parse(s) - today()) / DAY);
+const fmt = s => parse(s).toLocaleDateString("es-ES",{day:"numeric",month:"long",year:"numeric"});
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const newId = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+
+// ---------- datos: tu cuenta de Synergética (Supabase) y una copia en este móvil ----------
+const SB = 'https://xdrjltzsglascuhptpyl.supabase.co';
+const SK = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkcmpsdHpzZ2xhc2N1aHB0cHlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEwMjI3MjQsImV4cCI6MjEwNjU5ODcyNH0.8433MkN-CepLpwtbWyVx-BN6Wj7unqOmSw20A0NB6hY';
+const LKEY = "aldia_vencimientos";      // copia local (y los que se apuntan sin sesión)
+let items = [], loaded = false, cloud = false;
+let filter = "todos", openId = null, editId = null, confirmId = null, busy = false;
+
+function localLoad(){ try{ return JSON.parse(localStorage.getItem(LKEY) || "[]"); }catch(e){ return []; } }
+function localSave(){ try{ localStorage.setItem(LKEY, JSON.stringify(items)); }catch(e){} }
+
+// La sesión la lleva Nutrición (Synergética). Si está abierta en Al día, le pedimos el token
+// a ella para que sea la única que lo renueva; si no, usamos el guardado si sigue vigente.
+async function token(){
+  try{
+    const f = window.parent !== window && window.parent.document.getElementById("f-nutri");
+    const w = f && f.contentWindow;
+    if(w && typeof w.sbTok === "function") return await w.sbTok();
+  }catch(e){}
+  try{
+    const s = JSON.parse(localStorage.getItem("syn_sess"));
+    if(s && s.tk && s.uid && s.uid !== "demo" && s.exp - Date.now()/1000 > 30) return s.tk;
+  }catch(e){}
+  return null;
+}
+async function api(path, opt = {}){
+  const tk = await token(); if(!tk) throw Object.assign(new Error("sin sesión"), {code:"nosession"});
+  const r = await fetch(SB + "/rest/v1/" + path, {method: opt.m || "GET",
+    headers: {apikey: SK, Authorization: "Bearer " + tk, "Content-Type": "application/json", Prefer: opt.pf || "return=minimal"},
+    body: opt.b ? JSON.stringify(opt.b) : undefined});
+  if(!r.ok){ const j = await r.json().catch(() => ({})); throw Object.assign(new Error(j.message || ("Error " + r.status)), {code: j.code || r.status}); }
+  const t = await r.text(); return t ? JSON.parse(t) : null;
+}
+const toRow = it => { const {id, local, ...data} = it; return {id, data, updated_at: new Date().toISOString()}; };
+
+const backend = {
+  async put(it){
+    if(cloud){ await api("vencimientos?on_conflict=user_id,id", {m:"POST", b: toRow(it), pf:"resolution=merge-duplicates,return=minimal"}); it = {...it, local:false}; }
+    else it = {...it, local:true};
+    const i = items.findIndex(x => x.id === it.id); if(i >= 0) items[i] = it; else items.push(it);
+    localSave(); render();
+  },
+  async remove(id){
+    if(cloud) await api("vencimientos?id=eq." + encodeURIComponent(id), {m:"DELETE"});
+    items = items.filter(x => x.id !== id); localSave(); render();
+  }
+};
+
+function setStatus(kind){
+  localBanner.hidden = kind === "cloud";
+  localBanner.querySelector("span").textContent =
+    kind === "notable" ? "Falta crear la tabla de vencimientos en Supabase. Mientras tanto se guardan solo en este móvil."
+    : kind === "offline" ? "Sin conexión: ves la última copia guardada en este móvil. Los cambios se guardarán aquí hasta que vuelvas a tener conexión."
+    : "Entra con tu cuenta en Nutrición para guardar los vencimientos en la nube y verlos en todos tus dispositivos. Mientras tanto se guardan solo en este móvil.";
+}
+
+async function init(){
+  items = localLoad(); loaded = true; render();
+  try{
+    const rows = await api("vencimientos?select=id,data&order=updated_at.asc");
+    cloud = true;
+    const pend = items.filter(i => i.local);          // apuntados sin sesión: se suben ahora
+    items = rows.map(r => ({id: r.id, ...r.data, local:false}));
+    for(const it of pend){ if(!items.some(x => x.id === it.id)){ try{ await backend.put(it); }catch(e){ items.push(it); } } }
+    localSave(); setStatus("cloud");
+  }catch(e){
+    cloud = false;
+    setStatus(e.code === "nosession" ? "nosession" : (e.code === "42P01" || e.code === 404 || e.code === "PGRST205") ? "notable" : "offline");
+  }
+  render();
+}
+
+// ---------- view ----------
+function status(it){ const d = daysLeft(it.date); return d < 0 ? "bad" : d <= (it.remind || 30) ? "warn" : "ok"; }
+function daysLabel(d){
+  if(d < 0){ const a = -d; return a > 99 ? {n:Math.round(a/30), u:"meses pasados"} : {n:a, u: a===1 ? "día pasado" : "días pasados"}; }
+  if(d === 0) return {n:"Hoy", u:""};
+  if(d > 99){ const m = Math.round(d/30); return m > 23 ? {n:Math.round(d/365), u:"años"} : {n:m, u: m===1 ? "mes" : "meses"}; }
+  return {n:d, u: d===1 ? "día" : "días"};
+}
+
+function render(){
+  const valid = items.filter(i => i.date);
+  const s = {bad:0,warn:0,ok:0}; valid.forEach(i => s[status(i)]++);
+  nBad.textContent = s.bad; nWarn.textContent = s.warn; nOk.textContent = s.ok;
+  exBanner.hidden = !valid.some(i => i.ex);
+
+  const counts = {}; valid.forEach(i => counts[i.cat] = (counts[i.cat]||0) + 1);
+  if(filter !== "todos" && !counts[filter]) filter = "todos";
+  filters.innerHTML = [["todos","Todos",valid.length], ...Object.entries(CATS).filter(([k]) => counts[k]).map(([k,v]) => [k,v,counts[k]])]
+    .map(([k,v,n]) => `<button class="chip" type="button" data-f="${k}" aria-pressed="${filter===k}">${v} ${n}</button>`).join("");
+
+  if(!loaded){ list.innerHTML = `<li class="empty">Cargando tus vencimientos…</li>`; return; }
+  const shown = valid.filter(i => filter==="todos" || i.cat===filter).sort((a,b) => parse(a.date) - parse(b.date));
+  if(!shown.length){
+    list.innerHTML = `<li class="empty">Todavía no has apuntado nada.<br>Pulsa «+ Añadir» y empieza por el DNI, el carnet o el seguro del coche.</li>`;
+    return;
+  }
+  list.innerHTML = shown.map(it => {
+    const d = daysLeft(it.date), st = status(it), l = daysLabel(d), t = TYPES[it.type] || TYPES.otro, open = openId === it.id;
+    const when = d < 0 ? `Caducó el ${fmt(it.date)}` : `Vence el ${fmt(it.date)}`;
+    const guide = t.guide ? `<h3>¿Qué tengo que hacer?</h3><p>${esc(t.guide)}</p>` : "";
+    const note = it.note ? `<div class="note">${esc(it.note)}</div>` : "";
+    const actions = confirmId === it.id
+      ? `<span>¿Borrar «${esc(it.name)}»?</span><button class="btn danger" type="button" data-a="del-yes" data-id="${it.id}">Borrar</button><button class="btn ghost" type="button" data-a="del-no">Cancelar</button>`
+      : `<button class="btn" type="button" data-a="renew" data-id="${it.id}">Ya lo he renovado</button><button class="btn ghost" type="button" data-a="edit" data-id="${it.id}">Editar</button><button class="btn ghost" type="button" data-a="del" data-id="${it.id}">Borrar</button>`;
+    return `<li class="item s-${st}">
+      <button class="row" type="button" data-a="toggle" data-id="${it.id}" aria-expanded="${open}">
+        <span class="days"><b>${l.n}</b><small>${l.u}</small></span>
+        <span class="meta"><strong>${esc(it.name)}${it.ex ? '<span class="ex">Ejemplo</span>' : ""}</strong><span>${when} · ${CATS[it.cat] || "Otros"}${it.quien ? " · " + esc(it.quien) : ""}</span></span>
+      </button>
+      ${open ? `<div class="detail">${note}${guide}<div class="actions">${actions}</div></div>` : ""}
+    </li>`;
+  }).join("");
+}
+
+// ---------- form ----------
+const fType = document.getElementById("f-type"), fName = document.getElementById("f-name"),
+      fDate = document.getElementById("f-date"), fRemind = document.getElementById("f-remind"),
+      fNote = document.getElementById("f-note"), fErr = document.getElementById("f-err"), fQuien = document.getElementById("f-quien");
+fType.innerHTML = Object.entries(CATS).filter(([c]) => c !== "otros").map(([c,label]) =>
+  `<optgroup label="${label}">${Object.entries(TYPES).filter(([k,t]) => t.cat===c).map(([k,t]) => `<option value="${k}">${t.name}</option>`).join("")}</optgroup>`
+).join("") + `<option value="otro">Otro</option>`;
+
+const typeNames = Object.values(TYPES).map(t => t.name);
+function setRemind(v){ fRemind.value = [...fRemind.options].some(o => o.value == String(v)) ? String(v) : "30"; }
+function typeHint(){ fType.nextElementSibling.textContent = TYPES[fType.value].guide ? "Al abrirlo verás una guía corta de qué hacer." : ""; }
+
+function openForm(it, title){
+  editId = it ? it.id : null;
+  formTitle.textContent = title || (it ? "Editar vencimiento" : "Nuevo vencimiento");
+  fType.value = it ? (TYPES[it.type] ? it.type : "otro") : "dni";
+  fName.value = it ? it.name : TYPES.dni.name;
+  fDate.value = it ? it.date : "";
+  setRemind(it ? it.remind : TYPES.dni.remind);
+  fNote.value = it ? (it.note || "") : "";
+  fQuien.value = it && it.quien ? it.quien : "Ana";
+  typeHint(); fErr.hidden = true; form.hidden = false;
+  form.scrollIntoView({behavior:"smooth", block:"start"});
+  fDate.focus({preventScroll:true});
+}
+fType.addEventListener("change", () => {
+  const t = TYPES[fType.value];
+  if(!fName.value.trim() || typeNames.includes(fName.value)) fName.value = fType.value === "otro" ? "" : t.name;
+  setRemind(t.remind); typeHint();
+});
+addBtn.addEventListener("click", () => openForm(null));
+cancelBtn.addEventListener("click", () => { form.hidden = true; });
+form.addEventListener("submit", async e => {
+  e.preventDefault();
+  if(busy) return;
+  const name = fName.value.trim(), date = fDate.value;
+  if(!name || !date){ fErr.textContent = !name ? "Escribe un nombre." : "Elige la fecha de caducidad o renovación."; fErr.hidden = false; return; }
+  const type = fType.value;
+  const it = {id: editId || newId(), type, name, cat: TYPES[type].cat, date, remind: Number(fRemind.value), note: fNote.value.trim(), quien: fQuien.value, ex: false};
+  busy = true; saveBtn.disabled = true;
+  try{
+    await backend.put(it);
+    if(!editId){ openId = it.id; filter = "todos"; }
+    form.hidden = true;
+  }catch(err){
+    fErr.textContent = "No se ha podido guardar. Comprueba la conexión y vuelve a pulsar Guardar.";
+    fErr.hidden = false;
+  }finally{ busy = false; saveBtn.disabled = false; render(); }
+});
+
+// ---------- list actions ----------
+list.addEventListener("click", async e => {
+  const b = e.target.closest("[data-a]"); if(!b) return;
+  const id = b.dataset.id, a = b.dataset.a;
+  if(a === "toggle"){ openId = openId === id ? null : id; confirmId = null; }
+  if(a === "edit"){ openForm(items.find(i => i.id === id)); return; }
+  if(a === "renew"){ const it = items.find(i => i.id === id); openForm(it, "Nueva fecha para " + it.name); fDate.value = ""; return; }
+  if(a === "del") confirmId = id;
+  if(a === "del-no") confirmId = null;
+  if(a === "del-yes"){ confirmId = null; openId = null; try{ await backend.remove(id); }catch(err){} }
+  render();
+});
+filters.addEventListener("click", e => { const b = e.target.closest("[data-f]"); if(!b) return; filter = b.dataset.f; render(); });
+clearEx.addEventListener("click", async () => {
+  clearEx.disabled = true;
+  for(const it of items.filter(i => i.ex)){ try{ await backend.remove(it.id); }catch(err){} }
+  clearEx.disabled = false; filter = "todos"; render();
+});
+
+// ---------- copia: exportar e importar ----------
+exportBtn.addEventListener("click", () => {
+  const data = JSON.stringify(items.map(({local, ...x}) => x), null, 2);
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([data], {type:"application/json"}));
+  a.download = "vencimientos.json"; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800);
+});
+importFile.addEventListener("change", async () => {
+  const f = importFile.files[0]; if(!f) return;
+  importMsg.hidden = false; importMsg.textContent = "Importando…";
+  try{
+    const list = JSON.parse(await f.text()); if(!Array.isArray(list)) throw 0;
+    let n = 0;
+    for(const x of list){
+      if(!x || !x.name || !x.date) continue;
+      const it = {id: x.id || newId(), type: TYPES[x.type] ? x.type : "otro", name: String(x.name), cat: x.cat || (TYPES[x.type] || TYPES.otro).cat,
+        date: x.date, remind: Number(x.remind) || 30, note: x.note || "", quien: x.quien || "", ex: false};
+      await backend.put(it); n++;
+    }
+    importMsg.textContent = n ? `Importados ${n} vencimientos.` : "El archivo no tenía vencimientos.";
+  }catch(e){ importMsg.textContent = "No se ha podido importar: el archivo no es una copia de vencimientos."; }
+  importFile.value = "";
+});
+
+render();
+init();
+// Al día avisa al abrir esta sección: si ya has entrado en Nutrición, pasamos a la nube.
+window.aldiaShown = () => { if(!cloud && !busy) init(); };
+
+</script>
+</body>
+</html>
