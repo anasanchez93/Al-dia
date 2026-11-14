@@ -112,7 +112,8 @@ footer{color:var(--muted);font-size:.8rem;display:flex;flex-direction:column;gap
     </div>
     <div class="field">
       <label for="f-quien">¿De quién es?</label>
-      <select id="f-quien"><option value="Ana">Ana</option><option value="Elena">Elena</option><option value="Las dos">Las dos</option></select>
+      <input id="f-quien" type="text" list="quienes" autocomplete="off" placeholder="Tu nombre u otra persona">
+      <datalist id="quienes"></datalist>
     </div>
     <div class="field">
       <label for="f-name">Nombre</label>
@@ -344,7 +345,9 @@ function openForm(it, title){
   fDate.value = it ? it.date : "";
   setRemind(it ? it.remind : TYPES.dni.remind);
   fNote.value = it ? (it.note || "") : "";
-  fQuien.value = it && it.quien ? it.quien : "Ana";
+  fQuien.value = it && it.quien ? it.quien : miNombre();
+  document.getElementById("quienes").innerHTML = [...new Set([miNombre(), ...items.map(x => x.quien)].filter(Boolean))]
+    .map(n => `<option value="${esc(n)}"></option>`).join("");
   typeHint(); fErr.hidden = true; form.hidden = false;
   form.scrollIntoView({behavior:"smooth", block:"start"});
   fDate.focus({preventScroll:true});
@@ -362,7 +365,7 @@ form.addEventListener("submit", async e => {
   const name = fName.value.trim(), date = fDate.value;
   if(!name || !date){ fErr.textContent = !name ? "Escribe un nombre." : "Elige la fecha de caducidad o renovación."; fErr.hidden = false; return; }
   const type = fType.value;
-  const it = {id: editId || newId(), type, name, cat: TYPES[type].cat, date, remind: Number(fRemind.value), note: fNote.value.trim(), quien: fQuien.value, ex: false};
+  const it = {id: editId || newId(), type, name, cat: TYPES[type].cat, date, remind: Number(fRemind.value), note: fNote.value.trim(), quien: fQuien.value.trim(), ex: false};
   busy = true; saveBtn.disabled = true;
   try{
     await backend.put(it);
@@ -392,6 +395,12 @@ clearEx.addEventListener("click", async () => {
   for(const it of items.filter(i => i.ex)){ try{ await backend.remove(it.id); }catch(err){} }
   clearEx.disabled = false; filter = "todos"; render();
 });
+
+// Nombre de la cuenta con la que se ha entrado en Nutrición (cada persona ve el suyo).
+function miNombre(){
+  try{ const s = JSON.parse(localStorage.getItem("syn_sess")); if(s && s.name && s.uid !== "demo") return String(s.name).trim(); }catch(e){}
+  return "";
+}
 
 // ---------- copia: exportar e importar ----------
 exportBtn.addEventListener("click", () => {
