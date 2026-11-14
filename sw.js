@@ -1,6 +1,6 @@
 // Al día — guarda la app en el móvil para que abra rápido y sin conexión.
 // Nutrición y Finanzas tienen su propio service worker; aquí solo va lo de Al día.
-const VERSION = 'aldia-v1';
+const VERSION = 'aldia-v2';
 const ARCHIVOS = ['./', 'index.html', 'vencimientos.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', e => {

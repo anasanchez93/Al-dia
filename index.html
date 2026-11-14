@@ -31,6 +31,11 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);display:flex;
 .stage iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:var(--bg)}
 .stage iframe[hidden]{display:none}
 .off{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;color:var(--mu)}
+.off[hidden]{display:none}
+.info{max-width:340px;display:flex;flex-direction:column;gap:12px;align-items:center}
+.info h2{margin:0;color:var(--ink);font:700 1.3rem/1.2 var(--font)}
+.info p{margin:0;line-height:1.45}
+.info button{border:0;border-radius:999px;padding:11px 18px;font:600 .95rem var(--font);background:var(--on);color:var(--on-ink);cursor:pointer}
 </style>
 </head>
 <body>
@@ -45,6 +50,14 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);display:flex;
   <iframe id="f-nutri" title="Nutrición"></iframe>
   <iframe id="f-fin" title="Finanzas" hidden></iframe>
   <iframe id="f-ven" title="Vencimientos" hidden></iframe>
+  <div class="off" id="fin-info" hidden>
+    <div class="info">
+      <h2>Finanzas</h2>
+      <p>Esta sección lleva las cuentas de casa con una hoja de Google propia: tus gastos, tu 50/30/20 y tus recibos. Nadie más los ve.</p>
+      <p>Para usarla necesitas tu copia de la hoja y su clave. Si no la tienes, pídesela a quien te pasó la app.</p>
+      <button type="button" id="fin-conectar">Conectar mi hoja</button>
+    </div>
+  </div>
 </div>
 <script>
 // Cada sección es la app de siempre: Synergética y Perrimón se cargan tal cual están publicadas,
@@ -57,15 +70,20 @@ function load(k, hash){
   const f = frame(k);
   if (!f.getAttribute('src')) f.src = SRC[k] + (hash || '');
 }
+// Finanzas va con la hoja de Google de cada casa: si en este móvil aún no está conectada,
+// se explica antes de abrir la configuración de Perrimón.
+function finConectada(){ try { return !!JSON.parse(localStorage.getItem('perrimon_cfg') || 'null') } catch (e) { return false } }
 function show(k, hash){
   if (!SRC[k]) k = 'nutri';
-  load(k, hash);
+  document.getElementById('fin-info').hidden = !(k === 'fin' && !finConectada() && !frame('fin').getAttribute('src'));
+  if (k !== 'fin' || finConectada() || frame('fin').getAttribute('src')) load(k, hash);
   Object.keys(SRC).forEach(x => frame(x).hidden = x !== k);
   sw.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', b.dataset.s === k));
   try { localStorage.setItem('aldia_seccion', k) } catch (e) {}
   try { const w = frame(k).contentWindow; if (w && w.aldiaShown) w.aldiaShown() } catch (e) {}
 }
 sw.addEventListener('click', e => { const b = e.target.closest('button'); if (b) show(b.dataset.s) });
+document.getElementById('fin-conectar').addEventListener('click', () => { load('fin'); show('fin'); });
 
 // Nutrición se carga siempre: guarda la sesión de tu cuenta, que también usa Vencimientos.
 load('nutri');
